@@ -1,13 +1,13 @@
 // 声明外部定义的函数
-extern int led(void);
 extern void helloworld(void);
 extern void helloworlduart(void);
+extern void ws2812(void);
 
 #define MODE_HELLOWORLD     0
 #define MODE_HELLOWORLDUART 1
-#define MODE_LED            2
+#define MODE_WS2812         2
 
-#define MODE_SELECTED   MODE_HELLOWORLDUART
+#define MODE_SELECTED   MODE_WS2812
 
 void app_main() {
     switch (MODE_SELECTED) {
@@ -17,8 +17,8 @@ void app_main() {
         case MODE_HELLOWORLDUART:
             helloworlduart();
             break;
-        case MODE_LED:
-            led();
+        case MODE_WS2812:
+            ws2812();
             break;
     }
 }
