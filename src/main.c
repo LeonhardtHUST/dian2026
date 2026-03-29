@@ -1,5 +1,6 @@
 #include <ws2812.h>
 
+extern void blink(void);
 extern void ws2812(uint8_t);
 extern void helloworld(void);
 extern void helloworlduart(void);
@@ -19,6 +20,7 @@ void app_main() {
 
     switch (MODE_SELECTED) {
         case MODE_BLINK:
+            blink();
             break;
         case MODE_HELLOWORLD:
             helloworld();
