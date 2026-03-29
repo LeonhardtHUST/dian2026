@@ -1,4 +1,4 @@
-﻿/* Created 19 Nov 2016 by Chris Osborn <fozztexx@fozztexx.com>
+/* Created 19 Nov 2016 by Chris Osborn <fozztexx@fozztexx.com>
  * http://insentricity.com
  *
  * Uses the RMT peripheral on the ESP32 for very accurate timing of
@@ -62,7 +62,7 @@ void ws2812_init(int gpioNum)
  * @param length 灯带上LED的数量。
  * @param array 包含每个LED颜色值的数组指针。
  */
-void ws2812_setColors(unsigned int length, rgbVal *array)
+void ws2812_setColors(uint8_t length, rgbVal *array)
 {
     if (led_chan == NULL) {
         return;
@@ -72,7 +72,7 @@ void ws2812_setColors(unsigned int length, rgbVal *array)
     uint8_t *buffer = (uint8_t *)malloc(buffer_size);
     if (!buffer) return;
 
-    for (unsigned int i = 0; i < length; i++) {
+    for (uint8_t i = 0; i < length; i++) {
         buffer[i * 3 + 0] = array[i].g; // WS2812期望GRB顺序
         buffer[i * 3 + 1] = array[i].r;
         buffer[i * 3 + 2] = array[i].b;
@@ -88,3 +88,8 @@ void ws2812_setColors(unsigned int length, rgbVal *array)
     free(buffer);
 }
 
+void ws2812_purge(uint8_t length)
+{
+    rgbVal off = makeRGBVal(0, 0, 0);
+    ws2812_setColors(length, &off); 
+}

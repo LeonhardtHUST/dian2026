@@ -50,8 +50,12 @@ static void light(void *arg) {
 	}
 }
 
-void ws2812() {
+void ws2812(uint8_t task) {
 	nvs_flash_init();
 	ws2812_init(WS2812_PIN);
-	xTaskCreate(light, "ws2812 rainbow demo", 4096, NULL, 10, NULL);
+	if (task == 1) {
+		xTaskCreate(light, "ws2812 rainbow demo", 4096, NULL, 10, NULL);
+	} else {
+		ws2812_purge(LIGHT_NUM);
+	}
 }

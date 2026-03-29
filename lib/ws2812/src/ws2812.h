@@ -25,7 +25,10 @@ extern void ws2812_init(int gpioNum);
 // 发送颜色数据到灯带
 // length: 灯带上LED的数量
 // array: 存放每个LED颜色数据的数组首地址
-extern void ws2812_setColors(unsigned int length, rgbVal *array);
+extern void ws2812_setColors(uint8_t length, rgbVal *array);
+
+// 关闭WS2812灯光
+extern void ws2812_purge(uint8_t length);
 
 // 辅助函数：根据r, g, b值快速生成一个rgbVal结构体
 static inline rgbVal makeRGBVal(uint8_t r, uint8_t g, uint8_t b)
