@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <utils.h>
 #include "driver/usb_serial_jtag.h"
 #include "esp_log.h"
 

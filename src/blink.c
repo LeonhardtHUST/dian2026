@@ -1,14 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "nvs_flash.h"
+#include <utils.h>
 #include <ws2812.h>
-
-#define WS2812_PIN  48
-#define LIGHT_NUM   2
-#define delay_ms(ms) vTaskDelay(pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1)
  
 static void blink_task(void *arg) {
     uint8_t led_state = 0;
