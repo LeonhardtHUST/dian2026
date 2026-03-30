@@ -12,6 +12,7 @@
 #define LIGHT_NUM   1
 
 // 使用 pdMS_TO_TICKS 保证在不足1个tick时至少延时1个tick，避免死循环
-#define delay_ms(ms) vTaskDelay(pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1)
+#define ticks_from_ms(ms) (pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1)
+#define delay_ms(ms) vTaskDelay(ticks_from_ms(ms))
 
 #endif // UTILS_H
