@@ -55,9 +55,10 @@ void app_prompt(void) {
     }
 
     // 2. 循环输出 "Press enter to continue...\r\n"
-    bool started = false;
+    static bool started = false;
     while (!started) {
         usbio_print(100, "Press enter to continue...\r\n");
+        
         
         // 尝试等待读取，相当于延时 + 检查输入
         // 每次循环等待约 1 秒，将 1 秒分成多次读取以提高响应速度
