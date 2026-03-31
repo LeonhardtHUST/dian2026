@@ -27,6 +27,10 @@ uint8_t usb_io_get_buffer_size() {
  */
 void usb_io_set_buffer_size(const uint8_t n) {
     buf_size = n;
+    usb_serial_jtag_driver_config_t usb_config = {
+        .rx_buffer_size = buf_size * 2,
+        .tx_buffer_size = buf_size * 2,
+    };
 }
 
 /**
@@ -47,13 +51,13 @@ int usb_print(const char* str, const uint32_t ms_to_wait) {
  * @param str 第一个字符串，后续参数为其它字符串 (const char*)。
  * @return int 如果所有打印都未报错，返回成功打印的最大字节数；如果某次打印报错，返回第一次报错时的负值。
  */
-int usb_print_multi(const uint8_t num, const char* str, ...) {
+int usb_print_multi(const uint32_t ms_to_wait, const uint8_t num, const char* str, ...) {
     if (num == 0) return 0;
 
     int first_neg = 0;
     bool has_neg = false;
 
-    int current_max = usb_print(str, DEFAULT_PRINT_WAIT_MS);
+    int current_max = usb_print(str, ms_to_wait);
     if (current_max < 0 && !has_neg) {
         first_neg = current_max;
         has_neg = true;
@@ -63,7 +67,7 @@ int usb_print_multi(const uint8_t num, const char* str, ...) {
     va_start(args, str);
     for (uint8_t i = 1; i < num; i++) {
         const char* next_str = va_arg(args, const char*);
-        int res = usb_print(next_str, DEFAULT_PRINT_WAIT_MS);
+        int res = usb_print(next_str, ms_to_wait);
         
         if (res < 0 && !has_neg) {
             first_neg = res;
@@ -71,7 +75,7 @@ int usb_print_multi(const uint8_t num, const char* str, ...) {
         }
         
         if (!has_neg) {
-            current_max = max(2, current_max, res);
+            current_max = max_list(2, current_max, res);
         }
     }
     va_end(args);

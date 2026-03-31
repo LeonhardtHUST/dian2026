@@ -1,3 +1,5 @@
+#include "utils.h"
+
 int max_list(const uint8_t num, const int n, ...) {
     if (num == 0) return 0;
     int maximum = n;
