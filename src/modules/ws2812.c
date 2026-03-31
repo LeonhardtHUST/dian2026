@@ -1,6 +1,30 @@
 #include <utils.h>
 #include <ws2812.h>
+#include <usb_serial_io.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "math.h"
+
+static TaskHandle_t ws2812_task_handle = NULL;
+
+static void wait_for_enter(void) {
+    usbio_print(100, "Press enter to return...\r\n");
+    while (1) {
+        usbio_rx_data_t rx = usbio_read(100);
+        if (rx.length > 0) {
+            char *d = (char *)rx.data;
+            for (int i = 0; i < rx.length; i++) {
+                char c = d[i];
+                if (c == '\r' || c == '\n') {
+                    usbio_rx_data_destruct(&rx);
+                    return;
+                }
+            }
+        }
+        usbio_rx_data_destruct(&rx);
+        delay_ms(10);
+    }
+}
 
 static void light(void *arg) {
 	/*
@@ -41,7 +65,13 @@ void ws2812(uint8_t task) {
 	nvs_flash_init();
 	ws2812_init(WS2812_PIN);
 	if (task == 1) {
-		xTaskCreate(light, "ws2812 rainbow demo", 4096, NULL, 10, NULL);
+		xTaskCreate(light, "ws2812 rainbow demo", 4096, NULL, 10, &ws2812_task_handle);
+		wait_for_enter();
+		if (ws2812_task_handle != NULL) {
+			vTaskDelete(ws2812_task_handle);
+			ws2812_task_handle = NULL;
+		}
+		ws2812_purge(LIGHT_NUM);
 	} else {
 		ws2812_purge(LIGHT_NUM);
 	}
