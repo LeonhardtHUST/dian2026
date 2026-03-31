@@ -8,12 +8,17 @@ extern void blink(void);
 extern void ws2812(uint8_t);
 extern void helloworld(void);
 extern void helloworlduart(void);
+extern void wifi_connect_run(void);
 
 #define WS2812_TASK         1
 
 void app_prompt(void) {
-    // 1. 初始化 USB Serial JTAG 驱动并分配缓冲
-    usbio_init(128);
+    static bool is_init = false;
+    if (!is_init) {
+        // 1. 初始化 USB Serial JTAG 驱动并分配缓冲
+        usbio_init(128);
+        is_init = true;
+    }
 
     // 2. 循环输出 "Press any key to continue...\r\n"
     bool started = false;
@@ -41,7 +46,7 @@ void app_prompt(void) {
     }
 
     // 3. 打印欢迎界面和任务列表
-    usbio_print_multi(100, 11,
+    usbio_print_multi(100, 10,
         "========================================\r\n",
         "          Welcome to Dian2026!          \r\n",
         "========================================\r\n",
@@ -49,6 +54,7 @@ void app_prompt(void) {
         " [1] WS2812\r\n",
         " [2] Hello World (USB)\r\n",
         " [3] Hello World (UART)\r\n",
+        " [4] WiFi Connect\r\n",
         "========================================\r\n",
         "Please select a task: "
     );
@@ -60,7 +66,7 @@ void app_prompt(void) {
             char *data = (char *)rx.data;
             for (int i = 0; i < rx.length; i++) {
                 char c = data[i];
-                if (c >= '0' && c <= '3') {
+                if (c >= '0' && c <= '4') {
                     selected_task = c - '0';
                     break;
                 }
@@ -73,8 +79,8 @@ void app_prompt(void) {
     }
 
     // 打印用户的选择
-    usbio_print_multi(100, 3, "\r\nSelected task: ", 
-        (selected_task == 0 ? "0\r\n" : selected_task == 1 ? "1\r\n" : selected_task == 2 ? "2\r\n" : "3\r\n")
+    usbio_print_multi(100, 2, "\r\nSelected task: ", 
+        (selected_task == 0 ? "0\r\n" : selected_task == 1 ? "1\r\n" : selected_task == 2 ? "2\r\n" : selected_task == 3 ? "3\r\n" : "4\r\n")
     );
 
     // 4. 执行对应的任务
@@ -90,6 +96,11 @@ void app_prompt(void) {
             break;
         case 3:
             helloworlduart();
+            break;
+        case 4:
+            wifi_connect_run();
+            // Optional: run prompt again or restart chip for menu?
+            // Actually app_prompt() returns, then main loop can re-call it.
             break;
     }
 }
