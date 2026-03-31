@@ -9,8 +9,42 @@ extern void ws2812(uint8_t);
 extern void helloworld(void);
 extern void helloworlduart(void);
 extern void wifi_connect_run(void);
+extern void network_status_run(void);
 
 #define WS2812_TASK         1
+
+static void wait_for_input(char *buf, size_t max_len) {
+    size_t pos = 0;
+    while (1) {
+        usbio_rx_data_t rx = usbio_read(100);
+        if (rx.length > 0) {
+            char *d = (char *)rx.data;
+            for (int i = 0; i < rx.length; i++) {
+                char c = d[i];
+                if (c == '\r' || c == '\n') {
+                    if (pos > 0) {
+                        buf[pos] = '\0';
+                        usbio_rx_data_destruct(&rx);
+                        return;
+                    }
+                } else if (c == '\b' || c == 127) { // backspace
+                    if (pos > 0) {
+                        pos--;
+                        usbio_print(10, "\b \b");
+                    }
+                } else {
+                    if (pos < max_len - 1) {
+                        buf[pos++] = c;
+                        char echo[2] = {c, '\0'};
+                        usbio_print(10, echo);
+                    }
+                }
+            }
+        }
+        usbio_rx_data_destruct(&rx);
+        delay_ms(10);
+    }
+}
 
 void app_prompt(void) {
     static bool is_init = false;
@@ -20,10 +54,10 @@ void app_prompt(void) {
         is_init = true;
     }
 
-    // 2. 循环输出 "Press any key to continue...\r\n"
+    // 2. 循环输出 "Press enter to continue...\r\n"
     bool started = false;
     while (!started) {
-        usbio_print(100, "Press any key to continue...\r\n");
+        usbio_print(100, "Press enter to continue...\r\n");
         
         // 尝试等待读取，相当于延时 + 检查输入
         // 每次循环等待约 1 秒，将 1 秒分成多次读取以提高响应速度
@@ -46,7 +80,7 @@ void app_prompt(void) {
     }
 
     // 3. 打印欢迎界面和任务列表
-    usbio_print_multi(100, 10,
+    usbio_print_multi(100, 11,
         "========================================\r\n",
         "          Welcome to Dian2026!          \r\n",
         "========================================\r\n",
@@ -55,33 +89,45 @@ void app_prompt(void) {
         " [2] Hello World (USB)\r\n",
         " [3] Hello World (UART)\r\n",
         " [4] WiFi Connect\r\n",
+        " [5] Network Status\r\n",
         "========================================\r\n",
         "Please select a task: "
     );
 
     int selected_task = -1;
+    char input_buf[16] = {0};
+    
     while (selected_task == -1) {
-        usbio_rx_data_t rx = usbio_read(100);
-        if (rx.length > 0) {
-            char *data = (char *)rx.data;
-            for (int i = 0; i < rx.length; i++) {
-                char c = data[i];
-                if (c >= '0' && c <= '4') {
-                    selected_task = c - '0';
-                    break;
-                }
+        wait_for_input(input_buf, sizeof(input_buf));
+        
+        bool is_valid = true;
+        size_t len = strlen(input_buf);
+        for(int i=0; i<len; i++) {
+            if(input_buf[i] < '0' || input_buf[i] > '9') {
+                is_valid = false;
+                break;
             }
         }
-        usbio_rx_data_destruct(&rx);
-        if (selected_task == -1) {
-            delay_ms(100);
+        
+        if(is_valid && len > 0) {
+            int num = 0;
+            for(int i=0; i<len; i++) {
+                num = num * 10 + (input_buf[i] - '0');
+            }
+            if(num >= 0 && num <= 5) {
+                selected_task = num;
+            } else {
+                usbio_print(100, "\r\nInvalid task number. Try again: ");
+            }
+        } else {
+            usbio_print(100, "\r\nInvalid input. Try again: ");
         }
     }
 
     // 打印用户的选择
-    usbio_print_multi(100, 2, "\r\nSelected task: ", 
-        (selected_task == 0 ? "0\r\n" : selected_task == 1 ? "1\r\n" : selected_task == 2 ? "2\r\n" : selected_task == 3 ? "3\r\n" : "4\r\n")
-    );
+    char sel_str[32];
+    snprintf(sel_str, sizeof(sel_str), "\r\nSelected task: %d\r\n", selected_task);
+    usbio_print(100, sel_str);
 
     // 4. 执行对应的任务
     switch (selected_task) {
@@ -99,8 +145,9 @@ void app_prompt(void) {
             break;
         case 4:
             wifi_connect_run();
-            // Optional: run prompt again or restart chip for menu?
-            // Actually app_prompt() returns, then main loop can re-call it.
+            break;
+        case 5:
+            network_status_run();
             break;
     }
 }
