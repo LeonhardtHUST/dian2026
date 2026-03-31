@@ -13,17 +13,17 @@ extern void helloworlduart(void);
 
 void app_prompt(void) {
     // 1. 初始化 USB Serial JTAG 驱动并分配缓冲
-    usb_io_init(128);
+    usbio_init(128);
 
     // 2. 循环输出 "Press any key to continue...\r\n"
     bool started = false;
     while (!started) {
-        usb_print(100, "Press any key to continue...\r\n");
+        usbio_print(100, "Press any key to continue...\r\n");
         
         // 尝试等待读取，相当于延时 + 检查输入
         // 每次循环等待约 1 秒，将 1 秒分成多次读取以提高响应速度
         for (int j = 0; j < 10; j++) {
-            USB_RX_Data rx = usb_read(100);
+            usbio_rx_data_t rx = usbio_read(100);
             if (rx.length > 0) {
                 char *data = (char *)rx.data;
                 for (int i = 0; i < rx.length; i++) {
@@ -33,7 +33,7 @@ void app_prompt(void) {
                     }
                 }
             }
-            usb_rx_data_destruct(&rx);
+            usbio_rx_data_destruct(&rx);
             if (started) {
                 break;
             }
@@ -41,7 +41,7 @@ void app_prompt(void) {
     }
 
     // 3. 打印欢迎界面和任务列表
-    usb_print_multi(100, 11,
+    usbio_print_multi(100, 11,
         "========================================\r\n",
         "          Welcome to Dian2026!          \r\n",
         "========================================\r\n",
@@ -55,7 +55,7 @@ void app_prompt(void) {
 
     int selected_task = -1;
     while (selected_task == -1) {
-        USB_RX_Data rx = usb_read(100);
+        usbio_rx_data_t rx = usbio_read(100);
         if (rx.length > 0) {
             char *data = (char *)rx.data;
             for (int i = 0; i < rx.length; i++) {
@@ -66,14 +66,14 @@ void app_prompt(void) {
                 }
             }
         }
-        usb_rx_data_destruct(&rx);
+        usbio_rx_data_destruct(&rx);
         if (selected_task == -1) {
             delay_ms(100);
         }
     }
 
     // 打印用户的选择
-    usb_print_multi(100, 3, "\r\nSelected task: ", 
+    usbio_print_multi(100, 3, "\r\nSelected task: ", 
         (selected_task == 0 ? "0\r\n" : selected_task == 1 ? "1\r\n" : selected_task == 2 ? "2\r\n" : "3\r\n")
     );
 

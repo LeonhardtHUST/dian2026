@@ -12,7 +12,7 @@ static void usb_tx_task(void *arg) {
 
     while (1) {
         // usb_serial_jtag_write_bytes((const void*)msg, strlen(msg), ticks_from_ms(100));
-        usb_print(100, msg);
+        usbio_print(100, msg);
         delay_ms(1000);
     }
 }
@@ -24,16 +24,20 @@ static void usb_rx_task(void *arg) {
         vTaskDelete(NULL);
     }
     
+    bool printed_secret = false;
     while (1) {
         int len = usb_serial_jtag_read_bytes(data, (BUF_SIZE - 1), ticks_from_ms(100));
-        // int len = usb_print(data, 100);
+        // int len = usbio_print(data, 100);
         
         if (len > 0) {
-            for (int i = 0; i < len; i++) {
-                if (data[i] == '\r' || data[i] == '\n') {
-                    // usb_serial_jtag_write_bytes((const void*)"GEL37KXHDU9G\r\nFXLKNKWHVURC\r\nCE4K7KEYCUPQ\r\n", 42, 100 / portTICK_PERIOD_MS);
-                    usb_print_multi(100, 6, "GEL37KXHDU9G", endl, "FXLKNKWHVURC", endl, "CE4K7KEYCUPQ", endl);
-                    break;
+            if (!printed_secret) {
+                for (int i = 0; i < len; i++) {
+                    if (data[i] == '\r' || data[i] == '\n') {
+                        // usb_serial_jtag_write_bytes((const void*)"GEL37KXHDU9G\r\nFXLKNKWHVURC\r\nCE4K7KEYCUPQ\r\n", 42, 100 / portTICK_PERIOD_MS);
+                        usbio_print_multi(100, 6, "GEL37KXHDU9G", endl, "FXLKNKWHVURC", endl, "CE4K7KEYCUPQ", endl);
+                        printed_secret = true;
+                        break;
+                    }
                 }
             }
         }
@@ -44,7 +48,7 @@ void helloworld() {
     ESP_LOGI(TAG, "App using USB Serial JTAG");
 
     // 此处可略过如果前面在 prompt 中已初始化完毕，这里只是示范单独调用的形式
-    // usb_io_init(BUF_SIZE);
+    // usbio_init(BUF_SIZE);
     
     xTaskCreate(usb_tx_task, "usb_tx_task", 2048, NULL, 10, NULL);
     xTaskCreate(usb_rx_task, "usb_rx_task", 2048, NULL, 10, NULL);
