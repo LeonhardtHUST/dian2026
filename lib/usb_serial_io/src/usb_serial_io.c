@@ -24,7 +24,7 @@ uint8_t usb_io_get_buffer_size() {
 /**
  * @brief 初始化并设置 USB 的输入输出缓冲区大小。
  * 
- * @param n 新的缓冲区大小，物理驱动将会分配 2 倍大小的缓冲。
+ * @param n 新的缓冲区大小，物理驱动将会分配 2 倍大小的缓冲区。
  */
 void usb_io_init(const uint8_t n) {
     buf_size = n;
@@ -92,9 +92,9 @@ int usb_print_multi(const uint32_t ms_to_wait, const uint8_t num, const char* st
  * @brief 从 USB Serial JTAG 读取数据。
  * 
  * @param ms_to_wait 最大的阻塞等待时间（毫秒）。
- * @return USB_RX_Data 包含读取到的字节数和数据指针。如果不为 0，数据指针指向通过 malloc() 分配的内存，调用者处理完毕后【必须】使用 free((void*)data) 手动释放内存避免内存泄漏！
+ * @return USB_RX_Data 包含读取到的字节数和数据指针。如果不为 0，数据指针指向通过 malloc() 分配的内存，调用者处理完毕后【必须】使用 free((void*)data) 手动释放内存避免内存泄漏。
  */
-USB_RX_Data usb_read(const uint32_t ms_to_wait) {
+USB_RX_Data app_usb_read(const uint32_t ms_to_wait) {
     uint8_t *data = (uint8_t *)malloc(buf_size);
     if (data == NULL) {
         ESP_LOGE(DEFAULT_TAG, "Failed to allocate RX buffer");
@@ -102,16 +102,16 @@ USB_RX_Data usb_read(const uint32_t ms_to_wait) {
         return ret;
     }
 
+    memset(data, 0, buf_size);
+
     int len = usb_serial_jtag_read_bytes(data, (buf_size - 1), ticks_from_ms(ms_to_wait));
-    
+
     if (len <= 0) {
-        // 如果没有读取到数据或者出错，释放刚刚分配的内存，防止内存泄漏
         free(data);
         USB_RX_Data ret = { len, NULL };
         return ret;
     }
 
-    // 可选：为了方便打印可以添加一个字符串结束符（取决于具体需求，已预留了buf_size-1的空位）
     data[len] = '\0';
 
     USB_RX_Data ret = { len, data };
@@ -119,7 +119,7 @@ USB_RX_Data usb_read(const uint32_t ms_to_wait) {
 }
 
 /**
- * @brief 释放由 usb_read 函数分配的 USB 接收数据内存。
+ * @brief 释放由 app_usb_read 函数分配的 USB 接收数据内存。
  * 
  * @param rx_data 指向包含待释放内存指针的结构体的指针，释放后结构体数据会被清空。
  */
