@@ -11,6 +11,14 @@ extern void helloworlduart(void);
 extern void wifi_connect_run(void);
 extern void network_status_run(void);
 
+// 定义各个功能的启用/禁用状态宏 (1=启用, 0=禁用)
+#define ENABLE_TASK_0_BLINK           1
+#define ENABLE_TASK_1_WS2812          1
+#define ENABLE_TASK_2_HELLOWORLD_USB  1
+#define ENABLE_TASK_3_HELLOWORLD_UART 0
+#define ENABLE_TASK_4_WIFI_CONNECT    1
+#define ENABLE_TASK_5_NETWORK_STATUS  1
+
 #define WS2812_TASK         1
 
 static void wait_for_input(char *buf, size_t max_len) {
@@ -24,6 +32,10 @@ static void wait_for_input(char *buf, size_t max_len) {
                 if (c == '\r' || c == '\n') {
                     if (pos > 0) {
                         buf[pos] = '\0';
+                        usbio_rx_data_destruct(&rx);
+                        return;
+                    } else if (c == '\r') {
+                        buf[0] = '\0';
                         usbio_rx_data_destruct(&rx);
                         return;
                     }
@@ -130,25 +142,50 @@ void app_prompt(void) {
     snprintf(sel_str, sizeof(sel_str), "\r\nSelected task: %d\r\n", selected_task);
     usbio_print(100, sel_str);
 
-    // 4. 执行对应的任务
+    // 检查并执行对应的任务
+    bool task_enabled = false;
     switch (selected_task) {
         case 0:
+#if ENABLE_TASK_0_BLINK
+            task_enabled = true;
             blink();
+#endif
             break;
         case 1:
+#if ENABLE_TASK_1_WS2812
+            task_enabled = true;
             ws2812(WS2812_TASK);
+#endif
             break;
         case 2:
+#if ENABLE_TASK_2_HELLOWORLD_USB
+            task_enabled = true;
             helloworld();
+#endif
             break;
         case 3:
+#if ENABLE_TASK_3_HELLOWORLD_UART
+            task_enabled = true;
             helloworlduart();
+#endif
             break;
         case 4:
+#if ENABLE_TASK_4_WIFI_CONNECT
+            task_enabled = true;
             wifi_connect_run();
+#endif
             break;
         case 5:
+#if ENABLE_TASK_5_NETWORK_STATUS
+            task_enabled = true;
             network_status_run();
+#endif
             break;
+    }
+
+    if (!task_enabled) {
+        usbio_print(100, "This component is disabled. Press enter to return...\r\n");
+        char dummy[2];
+        wait_for_input(dummy, sizeof(dummy));
     }
 }

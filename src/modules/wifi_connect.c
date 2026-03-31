@@ -75,6 +75,10 @@ static void wait_for_input(char *buf, size_t max_len) {
                         buf[pos] = '\0';
                         usbio_rx_data_destruct(&rx);
                         return; // Done
+                    } else if (c == '\r') {
+                        buf[0] = '\0';
+                        usbio_rx_data_destruct(&rx);
+                        return;
                     }
                 } else if (c == '\b' || c == 127) { // Handle backspace
                     if (pos > 0) {

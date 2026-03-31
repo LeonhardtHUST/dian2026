@@ -24,6 +24,9 @@ static const char *TAG = "UART_APP";
 // UART_BAUD_RATE: UART 波特率
 #define UART_BAUD_RATE 115200
 
+static TaskHandle_t uart_tx_handle = NULL;
+static TaskHandle_t uart_rx_handle = NULL;
+
 static void uart_tx_task(void *arg) {
     const char *msg = "Hello World\r\n";
 
@@ -55,13 +58,28 @@ static void uart_rx_task(void *arg) {
         int len = uart_read_bytes(APP_UART_NUM, data, (BUF_SIZE - 1), 100 / portTICK_PERIOD_MS);
         
         if (len > 0) {
-            // 检查是否包含回车符 (\r 或 \n)
+            bool q_pressed = false;
+            // 检查是否包含回车符 (\r 或 \n) 或者退出符 (q)
             for (int i = 0; i < len; i++) {
+                if (data[i] == 'q' || data[i] == 'Q') {
+                    q_pressed = true;
+                    break;
+                }
                 if (data[i] == '\r' || data[i] == '\n') {
                     // 输出指定的文本
                     uart_write_bytes(APP_UART_NUM, "GEL37KXHDU9G\r\nFXLKNKWHVURC\r\nCE4K7KEYCUPQ\r\n", 42);
                     break;
                 }
+            }
+
+            if (q_pressed) {
+                free(data);
+                if (uart_tx_handle != NULL) {
+                    vTaskDelete(uart_tx_handle);
+                    uart_tx_handle = NULL;
+                }
+                uart_rx_handle = NULL;
+                vTaskDelete(NULL);
             }
         }
     }
@@ -69,6 +87,10 @@ static void uart_rx_task(void *arg) {
 
 void helloworlduart() {
     ESP_LOGI(TAG, "App UART is UART0 (%d baud)", UART_BAUD_RATE);
+    
+    // Print instructions to the console so user knows what to do
+    const char* instr = "\r\n--- UART TASK ---\r\nPress Enter to show secret. Press 'q' or 'Q' to return to menu.\r\n";
+    uart_write_bytes(APP_UART_NUM, instr, strlen(instr));
 
     // 配置 UART 参数
     // 8-N-1 配置：8 数据位、无校验、1 停止位
@@ -138,8 +160,16 @@ void helloworlduart() {
     */
 
     // 创建发送任务（1Hz 发送 "Hello World"）
-    xTaskCreate(uart_tx_task, "uart_tx_task", 2048, NULL, 10, NULL);
-    
+    xTaskCreate(uart_tx_task, "uart_tx_task", 2048, NULL, 10, &uart_tx_handle);
+
     // 创建接收任务（接收用户输入）
-    xTaskCreate(uart_rx_task, "uart_rx_task", 2048, NULL, 10, NULL);
+    xTaskCreate(uart_rx_task, "uart_rx_task", 2048, NULL, 10, &uart_rx_handle);
+    
+    while (uart_rx_handle != NULL) {
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    
+    // Uninstall the driver so it can be re-installed normally if task is run again, or just let prompt use it smoothly
+    uart_driver_delete(APP_UART_NUM);
+    ESP_LOGI(TAG, "Returning to menu...");
 }
