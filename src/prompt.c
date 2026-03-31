@@ -10,6 +10,8 @@ extern void helloworld(void);
 extern void helloworlduart(void);
 extern void wifi_connect_run(void);
 extern void network_status_run(void);
+extern void storage_task_run(void);
+extern void ftp_server_run(void);
 
 // 定义各个功能的启用/禁用状态宏 (1=启用, 0=禁用)
 #define ENABLE_TASK_0_BLINK           1
@@ -18,6 +20,8 @@ extern void network_status_run(void);
 #define ENABLE_TASK_3_HELLOWORLD_UART 0
 #define ENABLE_TASK_4_WIFI_CONNECT    1
 #define ENABLE_TASK_5_NETWORK_STATUS  1
+#define ENABLE_TASK_6_STORAGE         1
+#define ENABLE_TASK_7_FTP_SERVER      1
 
 #define WS2812_TASK         1
 
@@ -103,6 +107,8 @@ void app_prompt(void) {
         " [3] Hello World (UART)\r\n",
         " [4] WiFi Connect\r\n",
         " [5] Network Status\r\n",
+        " [6] Storage Management\r\n",
+        " [7] FTP Server\r\n",
         "========================================\r\n",
         "Please select a task: "
     );
@@ -128,6 +134,7 @@ void app_prompt(void) {
                 num = num * 10 + (input_buf[i] - '0');
             }
             if(num >= 0 && num <= 5) {
+            if(num >= 0 && num <= 7) {
                 selected_task = num;
             } else {
                 usbio_print(100, "\r\nInvalid task number. Try again: ");
@@ -179,6 +186,18 @@ void app_prompt(void) {
 #if ENABLE_TASK_5_NETWORK_STATUS
             task_enabled = true;
             network_status_run();
+#endif
+            break;
+                case 6:
+#if ENABLE_TASK_6_STORAGE
+            task_enabled = true;
+            storage_task_run();
+#endif
+            break;
+        case 7:
+#if ENABLE_TASK_7_FTP_SERVER
+            task_enabled = true;
+            ftp_server_run();
 #endif
             break;
     }
