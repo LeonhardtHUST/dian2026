@@ -133,7 +133,6 @@ void app_prompt(void) {
             for(int i=0; i<len; i++) {
                 num = num * 10 + (input_buf[i] - '0');
             }
-            if(num >= 0 && num <= 5) {
             if(num >= 0 && num <= 7) {
                 selected_task = num;
             } else {
