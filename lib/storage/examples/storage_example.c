@@ -13,7 +13,7 @@ static const char *TAG = "STORAGE_EXAMPLE";
 void storage_example_task(void *pvParameters) {
     ESP_LOGI(TAG, "=== 开始 Storage 功能演示 ===");
 
-    // 1. 初始化文件系统（SPIFFS）
+    // 1. 初始化文件系统（FAT）
     // 必须在使用文件读写功能之前调用此函数！
     if (storage_init() != ESP_OK) {
         ESP_LOGE(TAG, "文件系统初始化失败，退出示例！");

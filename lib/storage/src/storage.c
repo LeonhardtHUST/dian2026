@@ -4,12 +4,15 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
-#include "esp_spiffs.h"
+#include "esp_vfs_fat.h"
 #include "esp_log.h"
+#include "wear_levelling.h"
 
 static const char *TAG = "STORAGE";
 
-#define BASE_PATH "/spiffs"
+#define BASE_PATH "/fatfs"
+
+static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 
 // 内部辅助函数：给文件名自动补全基础路径
 static void get_full_path(char *dest, size_t max_len, const char *filename) {
@@ -21,42 +24,41 @@ static void get_full_path(char *dest, size_t max_len, const char *filename) {
 }
 
 /**
- * @brief 初始化文件系统（SPIFFS）。
+ * @brief 初始化文件系统（FAT）。
  * 
  * 在使用任何文件操作（读、写、删等）前必须调用此函数挂载分区。
- * 详情：使用给定的分区表自动挂载（默认"spiffs"），并在失败时自动进行格式化尝试。
+ * 详情：使用给定的分区表自动挂载（默认寻找 "storage" 分区），并在失败时自动进行格式化尝试。
  * 
  * @return esp_err_t 初始化成功返回 ESP_OK，如果设备没有对应分区则返回 ESP_ERR_NOT_FOUND。
  */
 esp_err_t storage_init(void) {
-    ESP_LOGI(TAG, "Initializing SPIFFS filesystem...");
+    ESP_LOGI(TAG, "Initializing FAT filesystem...");
 
-    esp_vfs_spiffs_conf_t conf = {
-      .base_path = BASE_PATH,
-      .partition_label = NULL, // 使用默认的分区标签（如果是自定义表，名字建议为 spiffs 或填入你的 csv 里的标签）
-      .max_files = 5,
-      .format_if_mount_failed = true // 挂载失败自动格式化
+    const esp_vfs_fat_mount_config_t mount_config = {
+            .max_files = 5,
+            .format_if_mount_failed = true,
+            .allocation_unit_size = CONFIG_WL_SECTOR_SIZE
     };
 
-    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(BASE_PATH, "storage", &mount_config, &s_wl_handle);
 
     if (ret != ESP_OK) {
         if (ret == ESP_FAIL) {
             ESP_LOGE(TAG, "Failed to mount or format filesystem");
         } else if (ret == ESP_ERR_NOT_FOUND) {
-            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+            ESP_LOGE(TAG, "Failed to find FAT partition");
         } else {
-            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "Failed to initialize FAT (%s)", esp_err_to_name(ret));
         }
         return ret;
     }
 
-    size_t total = 0, used = 0;
-    ret = esp_spiffs_info(NULL, &total, &used);
+    uint64_t total = 0, free_bytes = 0;
+    ret = esp_vfs_fat_info(BASE_PATH, &total, &free_bytes);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to get FAT partition information (%s)", esp_err_to_name(ret));
     } else {
-        ESP_LOGI(TAG, "Partition size: total: %d bytes, used: %d bytes", total, used);
+        ESP_LOGI(TAG, "Partition size: total: %llu bytes, free: %llu bytes", total, free_bytes);
     }
 
     return ESP_OK;
@@ -70,14 +72,24 @@ esp_err_t storage_init(void) {
  * @return esp_err_t 格式化成功返回 ESP_OK，格式化失败返回相应的错误码。
  */
 esp_err_t storage_format(void) {
-    ESP_LOGW(TAG, "Formatting SPIFFS partition. This will erase all data.");
-    esp_err_t ret = esp_spiffs_format(NULL); // NULL 即清空默认 spiffs 分区
+    ESP_LOGW(TAG, "Formatting FAT partition. This will erase all data.");
+    
+    // 如果已经挂载，我们需要先卸载才能格式化
+    if (s_wl_handle != WL_INVALID_HANDLE) {
+        esp_vfs_fat_spiflash_unmount_rw_wl(BASE_PATH, s_wl_handle);
+        s_wl_handle = WL_INVALID_HANDLE;
+    }
+
+    esp_err_t ret = esp_vfs_fat_spiflash_format_rw_wl(BASE_PATH, "storage");
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to format SPIFFS (%s)", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to format FAT (%s)", esp_err_to_name(ret));
         return ret;
     }
     ESP_LOGI(TAG, "Format successful, partition cleared!");
-    return ESP_OK;
+    
+    // 重新挂载
+    ESP_LOGI(TAG, "Remounting...");
+    return storage_init();
 }
 
 /**
@@ -85,7 +97,7 @@ esp_err_t storage_format(void) {
  * 
  * 如果该同名文件不存在，则自动创建；如果已存在该文件，该文件的旧有内容将被立刻丢弃覆盖。
  * 
- * @param filename 要保存的文件名（例如："my_config.txt"，不需要包含绝对挂载路径/spiffs）。
+ * @param filename 要保存的文件名（例如："my_config.txt"，不需要包含绝对挂载路径/fatfs）。
  * @param data 要写入的字符串内容指针（需以 '\0' 结尾）。
  * @return esp_err_t 成功写入返回 ESP_OK，传参错误返回 ESP_ERR_INVALID_ARG，写入失败返回 ESP_FAIL。
  */

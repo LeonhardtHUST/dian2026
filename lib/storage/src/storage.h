@@ -11,14 +11,14 @@ extern "C" {
 #endif
 
 /**
- * @brief 初始化 Flash 存储与文件系统。
+ * @brief 初始化 FAT 存储与文件系统。
  *
  * @return esp_err_t 初始化成功返回 ESP_OK。
  */
 esp_err_t storage_init(void);
 
 /**
- * @brief 格式化/清除整个 storage 分区。
+ * @brief 格式化/清除整个 FAT storage 分区。
  *
  * @return esp_err_t 格式化成功返回 ESP_OK。
  */
