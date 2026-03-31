@@ -32,6 +32,11 @@ static void get_full_path(char *dest, size_t max_len, const char *filename) {
  * @return esp_err_t 初始化成功返回 ESP_OK，如果设备没有对应分区则返回 ESP_ERR_NOT_FOUND。
  */
 esp_err_t storage_init(void) {
+    static bool is_init = false;
+    if (is_init) {
+        return ESP_OK;
+    }
+
     ESP_LOGI(TAG, "Initializing FAT filesystem...");
 
     const esp_vfs_fat_mount_config_t mount_config = {
@@ -61,6 +66,7 @@ esp_err_t storage_init(void) {
         ESP_LOGI(TAG, "Partition size: total: %llu bytes, free: %llu bytes", total, free_bytes);
     }
 
+    is_init = true;
     return ESP_OK;
 }
 
