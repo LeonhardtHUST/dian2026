@@ -43,10 +43,8 @@ static void usb_rx_task(void *arg) {
 void helloworld() {
     ESP_LOGI(TAG, "App using USB Serial JTAG");
 
-    usb_io_set_buffer_size(BUF_SIZE);
-    
-    // 如果已经由 main/prompt 初始化，这里可能会报错，可忽略或加状态判断
-    // usb_serial_jtag_driver_install(&usb_config);
+    // 此处可略过如果前面在 prompt 中已初始化完毕，这里只是示范单独调用的形式
+    // usb_io_init(BUF_SIZE);
     
     xTaskCreate(usb_tx_task, "usb_tx_task", 2048, NULL, 10, NULL);
     xTaskCreate(usb_rx_task, "usb_rx_task", 2048, NULL, 10, NULL);

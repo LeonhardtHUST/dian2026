@@ -12,13 +12,8 @@ extern void helloworlduart(void);
 #define WS2812_TASK         1
 
 void app_prompt(void) {
-    // 1. 初始化 USB Serial JTAG 驱动
-    usb_serial_jtag_driver_config_t usb_config = {
-        .rx_buffer_size = 256,
-        .tx_buffer_size = 256,
-    };
-    usb_serial_jtag_driver_install(&usb_config);
-    usb_io_set_buffer_size(128);
+    // 1. 初始化 USB Serial JTAG 驱动并分配缓冲
+    usb_io_init(128);
 
     // 2. 循环输出 "Press any key to continue...\r\n"
     bool started = false;

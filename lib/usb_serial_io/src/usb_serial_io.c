@@ -22,12 +22,17 @@ uint8_t usb_io_get_buffer_size() {
 }
 
 /**
- * @brief 设置 USB 的输入输出缓冲区大小。
+ * @brief 初始化并设置 USB 的输入输出缓冲区大小。
  * 
- * @param n 新的缓冲区大小。
+ * @param n 新的缓冲区大小，物理驱动将会分配 2 倍大小的缓冲。
  */
-void usb_io_set_buffer_size(const uint8_t n) {
+void usb_io_init(const uint8_t n) {
     buf_size = n;
+    usb_serial_jtag_driver_config_t usb_config = {
+        .rx_buffer_size = buf_size * 2,
+        .tx_buffer_size = buf_size * 2,
+    };
+    usb_serial_jtag_driver_install(&usb_config);
 }
 
 /**

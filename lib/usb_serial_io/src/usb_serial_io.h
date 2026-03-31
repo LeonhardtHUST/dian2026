@@ -11,7 +11,7 @@ typedef struct {
 
 extern const char *endl;
 
-extern void usb_io_set_buffer_size(const uint8_t n);
+extern void usb_io_init(const uint8_t n);
 extern uint8_t usb_io_get_buffer_size(void);
 extern int usb_print(const uint32_t ms_to_wait, const char* str);
 extern int usb_print_multi(const uint32_t ms_to_wait, const uint8_t num, const char* str, ...);
